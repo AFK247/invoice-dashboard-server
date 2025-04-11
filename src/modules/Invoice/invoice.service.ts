@@ -18,6 +18,27 @@ async function syncInvoiceToQuickBooks(
   realmId: string,
 ) {
   try {
+    // Creating the customer in QuickBooks
+    const customerResponse = await axios.post(
+      `https://sandbox-quickbooks.api.intuit.com/v3/company/${realmId}/customer`,
+      {
+        DisplayName: invoice?.clientName,
+        PrimaryEmailAddr: invoice?.email
+          ? { Address: invoice?.email }
+          : undefined,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      },
+    );
+
+    const customerId = customerResponse?.data?.Customer?.Id;
+
+    // Creating the invoice with above customer
     const response = await axios.post(
       `https://sandbox-quickbooks.api.intuit.com/v3/company/${realmId}/invoice`,
       {
@@ -30,13 +51,13 @@ async function syncInvoiceToQuickBooks(
                 value: '1',
               },
             },
-            Description: invoice.description,
+            Description: invoice?.description,
           },
         ],
         CustomerRef: {
-          value: '1',
+          value: customerId?.toString(),
         },
-        DueDate: invoice.dueDate,
+        DueDate: invoice?.dueDate,
       },
       {
         headers: {
@@ -47,7 +68,7 @@ async function syncInvoiceToQuickBooks(
       },
     );
 
-    const invoiceId = response.data.Invoice.Id;
+    const invoiceId = response?.data?.Invoice?.Id;
 
     return invoiceId;
   } catch (err) {
