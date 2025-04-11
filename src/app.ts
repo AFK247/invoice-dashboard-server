@@ -7,33 +7,20 @@ import cookieParser from 'cookie-parser';
 
 const app: Application = express();
 
-// app.use(cors());
+app.use(cors());
 app.use(express.json());
 
 //parsers
 app.use(express.json());
 app.use(cookieParser());
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'https://invoice-dashboard-amber.vercel.app',
-];
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps, curl requests)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.indexOf(origin) === -1) {
-        return callback(new Error('CORS policy violation'), false);
-      }
-      return callback(null, true);
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  }),
-);
+// app.use(
+//   cors({
+//     origin: '*', // Allow requests from any origin
+//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+//   }),
+// );
 
 // Application routes
 app.use('/api/v1', router);

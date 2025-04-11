@@ -59,8 +59,6 @@ async function syncInvoiceToQuickBooks(
 export const getInvoiceDB = async () => {
   const [rows] = await DB.query('SELECT * FROM invoices');
 
-  console.log({ rows });
-
   if (!rows) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Failed to fetch invoices');
   }
