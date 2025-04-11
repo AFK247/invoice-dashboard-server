@@ -77,6 +77,46 @@ async function syncInvoiceToQuickBooks(
   }
 }
 
+async function checkCustomerExists(
+  customerName: string,
+  accessToken: string,
+  realmId: string,
+) {
+  try {
+    // Escape single quotes in customer name to prevent query issues
+    const escapedName = customerName.replace(/'/g, "\\'");
+
+    // Query for existing customer by display name
+    const queryResponse = await axios.get(
+      `https://sandbox-quickbooks.api.intuit.com/v3/company/${realmId}/query`,
+      {
+        params: {
+          query: `SELECT * FROM Customer WHERE DisplayName = '${escapedName}'`,
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      },
+    );
+
+    // Check if customer exists
+    if (
+      queryResponse?.data?.QueryResponse?.Customer &&
+      queryResponse?.data?.QueryResponse?.Customer.length > 0
+    ) {
+      // Return existing customer ID
+      return queryResponse.data.QueryResponse.Customer[0].Id;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error checking for existing customer:', error);
+    throw new Error(`Failed to check for existing customer`);
+  }
+}
+
 export const getInvoiceDB = async () => {
   const [rows] = await DB.query('SELECT * FROM invoices');
 
@@ -93,6 +133,15 @@ export const createInvoiceDB = async (
   realmId: string,
 ) => {
   const { clientName, email, amount, dueDate, status, description } = invoice;
+
+  const doesExist = await checkCustomerExists(clientName, accessToken, realmId);
+
+  if (doesExist) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Customer Name already exist in QuickBooks',
+    );
+  }
 
   const query = `
     INSERT INTO invoices (clientName, email, amount, dueDate, status, description)
